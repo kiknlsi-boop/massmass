@@ -97,6 +97,9 @@ button:focus-visible{outline:2.5px solid var(--a);outline-offset:2px}
 .note{margin-top:10px;font-size:14px;background:#F7F9FD;border-left:3px solid var(--a);border-radius:0 8px 8px 0;padding:11px 13px;animation:rise .25s ease both}
 .note.bad{border-left-color:var(--wrong);background:#FEF6F6}
 .note.good{border-left-color:var(--ok);background:#F2FAF6}
+.chk{margin-top:15px;border-top:1px dashed #A8DCC4;padding-top:14px}
+.chk-t{font-weight:800;color:var(--ok);margin:0 0 9px;font-size:14.5px}
+.chk .step-q{margin:0 0 4px}
 .hint{margin-top:9px;font-size:13.5px;color:var(--muted);background:#FFFBEB;border:1px dashed #EFD98A;border-radius:9px;padding:10px 12px}
 .locked{opacity:.35;pointer-events:none;filter:grayscale(.4)}
 .warnbox{margin-top:6px;background:var(--hit-soft);border:1px solid #DDD0FA;border-radius:11px;padding:13px 15px;font-size:14px}
@@ -118,7 +121,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:28px 0 0}
 <header>
   <p class="eyebrow">고1 수학</p>
   <h1>함수와 원의 방정식</h1>
-  <p class="sub">답을 고르면 채점만 하지 않습니다. 어디서 어긋났는지 짚고, 스스로 정답에 닿도록 한 단계씩 같이 갑니다.</p>
+  <p class="sub">정답을 알려주는 대신 생각하는 방법을 알려줍니다. 틀리면 왜 그 답이 나왔는지 짚고, 맞히면 왜 맞는지 되묻습니다.</p>
   <div class="group"><p class="glabel">함수</p><div class="chips" id="chipsA"></div></div>
   <div class="group"><p class="glabel">원의 방정식</p><div class="chips" id="chipsB"></div></div>
   <p class="progress" id="progress"></p>
@@ -425,6 +428,41 @@ var PROBLEMS=[
 }
 ];
 
+/* 근거 확인 — 정답을 맞혀도 "왜 그런지"를 되묻습니다. 찍어서 맞힌 것은 완료로 치지 않습니다. */
+var CHECKS=[
+{ q:'이 문제에서 숫자 2가 <b>가장 먼저</b> 들어간 함수는 무엇일까요?',
+  o:['f','g','둘 다 동시에'], right:0,
+  w:['맞습니다. '+M('g∘f')+'는 f가 2를 먼저 받습니다. 이 순서 하나만 잡으면 합성함수 문제는 전부 같은 방식으로 풀립니다.',
+     'g가 왼쪽에 쓰여 있어 먼저처럼 보이지만 아닙니다. 괄호로 풀면 '+M('g(f(2))')+'라서 f가 2를 먼저 받습니다.',
+     '동시에는 계산할 수 없습니다. 앞 함수의 결과가 뒤 함수의 입력이 되므로 순서가 반드시 있습니다.'] },
+{ q:'구한 답이 맞는지 확인하려면 무엇을 계산해 보면 될까요?',
+  o:[M('f(4)')+'가 5인지','f(5)가 4인지',M('f<sup>−1</sup>(4)')+'가 5인지'], right:0,
+  w:['맞습니다. 역함수 문제는 답을 원래 함수에 넣어 되돌려보면 항상 검산됩니다. '+M('f(4) = 5')+'이니 맞습니다.',
+     '방향이 반대입니다. f는 4를 5로 보내는 함수입니다.',
+     '역함수를 또 쓰면 검산이 되지 않습니다. 확실히 아는 쪽, 즉 원래 함수로 확인해야 합니다.'] },
+{ q:'이런 문제를 만났을 때 <b>가장 먼저</b> 해야 할 일은?',
+  o:[M('f<sup>−1</sup>(7) = 2')+'를 '+M('f(2) = 7')+'로 바꿔 쓴다','역함수 식부터 구한다','a에 값을 하나씩 넣어 맞춰본다'], right:0,
+  w:['맞습니다. 역함수 조건은 원래 함수 식으로 바꿔 놓는 순간 평범한 일차방정식이 됩니다. 이 한 줄이 전부입니다.',
+     '그 방법도 되긴 하지만 a가 섞여 있어 식이 복잡해집니다. 한 줄로 바꾸는 쪽이 훨씬 빠르고 실수도 적습니다.',
+     '값을 넣어 맞추는 방식은 답이 정수가 아니면 통하지 않습니다. 식을 세우는 습관을 들이세요.'] },
+{ q:'식에는 '+M('(y + 1)<sup>2</sup>')+'이 있는데 중심의 y좌표가 −1인 이유는?',
+  o:['표준형이 빼기 꼴이라 부호가 뒤집혀서','정해진 규칙 없이 그때그때 달라서','y가 음수인 자리라서'], right:0,
+  w:['맞습니다. '+M('y + 1 = y − (−1)')+'이므로 b는 −1입니다. 이 뒤집힘 하나가 원 단원 실수의 절반을 차지합니다.',
+     '규칙이 있습니다. 표준형은 항상 '+M('(y − b)<sup>2</sup>')+' 꼴이라, 더하기가 보이면 부호가 뒤집힙니다.',
+     'y의 부호와는 관계없습니다. 괄호 안을 빼기 꼴로 고쳐 읽는 규칙 때문입니다.'] },
+{ q:'완전제곱을 하면서 빼준 9와 4는 어디로 갔을까요?',
+  o:['오른쪽으로 넘어가 우변을 키웠다','계산 과정에서 그냥 사라졌다','반지름에 직접 더해졌다'], right:0,
+  w:['맞습니다. 좌변에서 빼준 만큼 우변으로 넘어가 16이 되었습니다. 이 상수를 하나라도 빠뜨리면 반지름이 통째로 틀립니다.',
+     '사라지지 않습니다. 등식이라 한쪽에서 뺀 만큼 반대편에서 반드시 처리됩니다.',
+     '반지름에 바로 더하는 게 아니라, 우변의 '+M('r<sup>2</sup>')+'을 만드는 데 쓰입니다.'] },
+{ q:'만약 이 원이 x축이 아니라 <b>y축</b>에 접했다면 반지름은?',
+  o:['2','3','√13'], right:0,
+  w:['맞습니다. y축까지의 거리는 x좌표인 2입니다. 어느 축에 접하느냐에 따라 보는 좌표가 바뀐다는 것까지 아셨으면 이 유형은 다 푸신 겁니다.',
+     '3은 x축까지의 거리입니다. y축은 세로로 선 선이라 좌우로 얼마나 떨어졌는지를 봐야 합니다.',
+     '그건 원점까지의 거리입니다. 축은 점이 아니라 선이라서 수직으로 내려간 길이만 재면 됩니다.'] }
+];
+PROBLEMS.forEach(function(P,i){ P.check=CHECKS[i]; });
+
 /* ══════════ 좌표평면 그리기 ══════════ */
 function plot(sp){
   if(!sp) return '';
@@ -575,12 +613,11 @@ function pick(j,btn){
   if(btn.disabled) return;
   var P=PROBLEMS[cur];
   if(j===P.answer){
-    btn.classList.add('is-right'); lockAll(); solved[cur]=1; renderChips();
+    btn.classList.add('is-right'); lockAll();
     elFb.innerHTML='<div class="fb hit"><p class="fb-t">정답입니다</p><p>'+P.solved+'</p>'+
-      '<button class="btn small" type="button" id="showSolve">풀이 과정 보기</button></div>';
+      '<div id="checkBox"></div></div>';
     showViz(P);
-    document.getElementById('showSolve').onclick=openGuide;
-    finish(P);
+    renderCheck(P);
     return;
   }
   btn.classList.add('is-wrong'); btn.disabled=true;
@@ -589,6 +626,35 @@ function pick(j,btn){
     '<p class="small">다시 한 번 골라 보세요.</p>'+
     '<button class="btn small" type="button" id="goGuide">한 단계씩 같이 풀기</button></div>';
   document.getElementById('goGuide').onclick=openGuide;
+}
+function renderCheck(P){
+  var c=P.check, box=document.getElementById('checkBox');
+  if(!c||!box){ solved[cur]=1; renderChips(); finish(P); return; }
+  var h='<div class="chk"><p class="chk-t">한 가지만 더 — 왜 그런지도 알고 계신가요?</p>'+
+        '<p class="step-q">'+c.q+'</p><div class="opts">';
+  c.o.forEach(function(o,j){ h+='<button class="opt" type="button" data-c="'+j+'">'+o+'</button>'; });
+  h+='</div><div id="chkNote"></div></div>';
+  box.innerHTML=h;
+  box.onclick=function(e){
+    var t=up(e.target,function(n){ return n.tagName==='BUTTON'&&n.getAttribute('data-c')!==null; });
+    if(!t||t.disabled) return;
+    checkAns(P,+t.getAttribute('data-c'),t);
+  };
+}
+function checkAns(P,j,btn){
+  var c=P.check, note=document.getElementById('chkNote');
+  if(j===c.right){
+    btn.classList.add('is-right');
+    var sib=btn.parentNode.getElementsByTagName('button');
+    for(var k=0;k<sib.length;k++) sib[k].disabled=true;
+    note.innerHTML='<div class="note good">'+c.w[j]+'</div>'+
+      '<button class="btn small" type="button" id="showSolve" style="margin-top:11px">풀이 과정 다시 보기</button>';
+    document.getElementById('showSolve').onclick=openGuide;
+    solved[cur]=1; renderChips(); finish(P);
+  }else{
+    btn.classList.add('is-wrong'); btn.disabled=true;
+    note.innerHTML='<div class="note bad">'+c.w[j]+'<br><span class="small">답 자체는 맞았습니다. 이유만 다시 골라 보세요.</span></div>';
+  }
 }
 function lockAll(){
   var l=elChoices.getElementsByTagName('button');
