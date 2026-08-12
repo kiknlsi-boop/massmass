@@ -34,10 +34,15 @@ h1{font-family:var(--font-math);font-size:27px;line-height:1.25;letter-spacing:-
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .chip.solved::after{content:"";position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:var(--ok);border:2px solid var(--paper)}
 .progress{font-size:12.5px;color:var(--muted);font-family:var(--font-num);margin:12px 2px 0}
+.reset{margin-left:10px;font-family:var(--font-body);font-size:12px;color:#9AA6B8;background:none;border:none;padding:0;text-decoration:underline;letter-spacing:0}
+.reset:hover{color:var(--wrong)}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin:16px 0;box-shadow:var(--shadow);max-width:100%}
 .card h2{font-size:13px;letter-spacing:.03em;margin:0 0 14px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:8px}
-.card h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.card h2::after{content:"";flex:1;height:1px;background:var(--line);order:1}
+.redo{order:2;flex:none;font-family:var(--font-body);font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--muted);background:transparent;border:1.5px solid var(--line);border-radius:8px;padding:5px 11px;transition:all .15s}
+.redo:hover{color:var(--ink);border-color:var(--ink)}
+.redo:active{transform:scale(.96)}
 .lv{font-family:var(--font-num);font-size:11px;color:#C9A227;letter-spacing:.1em}
 .topic{font-family:var(--font-num);font-size:10.5px;background:var(--hit);color:#fff;padding:2px 8px;border-radius:99px;letter-spacing:.02em}
 
@@ -120,7 +125,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:28px 0 0}
 </header>
 
 <section class="card">
-  <h2><span id="qLabel">문제</span> <span class="topic" id="qTopic"></span> <span class="lv" id="qLevel"></span></h2>
+  <h2><span id="qLabel">문제</span> <span class="topic" id="qTopic"></span> <span class="lv" id="qLevel"></span><button class="redo" type="button" id="redoBtn">다시 풀기</button></h2>
   <div id="qBody"></div>
   <div class="choices" id="choices"></div>
   <div id="feedback"></div>
@@ -494,7 +499,22 @@ var elChoices=document.getElementById('choices'), elFb=document.getElementById('
 var elVizCard=document.getElementById('vizCard'), elPlot=document.getElementById('plot'), elCap=document.getElementById('vizCap');
 var elGuide=document.getElementById('guideCard'), elSteps=document.getElementById('steps');
 var elRecap=document.getElementById('recapCard'), elRecapB=document.getElementById('recapBody'), elNext=document.getElementById('nextBtn');
-var solved={}, cur=0;
+var solved={}, cur=0, restored=false;
+
+/* 진행 상황 저장 — 문제 세트가 바뀌면 자동으로 초기화됩니다 */
+var KEY='math-progress-v1';
+var SIG=PROBLEMS.map(function(P){ return P.topic+':'+P.answer; }).join('|');
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify({sig:SIG, solved:solved})); }catch(e){}
+}
+function load(){
+  try{
+    var r=JSON.parse(localStorage.getItem(KEY)||'null');
+    if(r && r.sig===SIG) return r;
+  }catch(e){}
+  return null;
+}
+function wipe(){ try{ localStorage.removeItem(KEY); }catch(e){} }
 
 function up(node,match){ while(node&&node.nodeType){ if(node.nodeType===1&&match(node)) return node; node=node.parentNode; } return null; }
 
@@ -508,7 +528,14 @@ function renderChips(){
     (P.group===0?elA:elB).appendChild(b);
   });
   var c=0; for(var k in solved) c++;
-  elProg.innerHTML=c+' / '+PROBLEMS.length+' 완료';
+  elProg.innerHTML=(restored&&c>0?'이어서 풀기 · ':'')+c+' / '+PROBLEMS.length+' 완료'+
+    (c>0?' <button class="reset" type="button" id="resetBtn">진행 초기화</button>':'');
+  var rb=document.getElementById('resetBtn');
+  if(rb) rb.onclick=function(){
+    solved={}; restored=false; wipe();
+    show(0); window.scrollTo({top:0,behavior:'smooth'});
+  };
+  save();
 }
 
 function show(i){
@@ -620,8 +647,16 @@ function stepAns(P,i,j,btn){
 }
 
 elNext.onclick=function(){ show((cur+1)%PROBLEMS.length); window.scrollTo({top:0,behavior:'smooth'}); };
+document.getElementById('redoBtn').onclick=function(){
+  show(cur);
+  elBody.parentNode.scrollIntoView({behavior:'smooth',block:'start'});
+};
 
-show(0);
+var st=load();
+if(st && st.solved){ solved=st.solved; restored=true; }
+var first=0;
+for(var i=0;i<PROBLEMS.length;i++){ if(!solved[i]){ first=i; break; } }
+show(first);
 })();
 </script>
 </body>
